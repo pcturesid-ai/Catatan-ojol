@@ -10,6 +10,14 @@ const ok = ({ data, error }) => {
   return data;
 };
 
+const uid = async () => {
+  const { data, error } = await sb.auth.getSession();
+  if (error) throw error;
+  const id = data.session?.user?.id;
+  if (!id) throw new Error('Sesi habis. Silakan masuk lagi.');
+  return id;
+};
+
 // ---------- Autentikasi ----------
 export const getSession = async () => ok(await sb.auth.getSession()).session;
 export const signIn = async (email, password) => ok(await sb.auth.signInWithPassword({ email, password }));
@@ -23,36 +31,35 @@ export const onAuthChange = (cb) => sb.auth.onAuthStateChange((_e, session) => c
 // ---------- Dompet ----------
 export const listWallets = async () =>
   ok(await sb.from('wallet_balances').select('id,name,kind,initial_balance,balance,created_at').order('created_at'));
-export const saveWallet = async (w) =>
-  w.id
-    ? ok(await sb.from('wallets').update({ name: w.name, kind: w.kind, initial_balance: w.initial_balance }).eq('id', w.id))
-    : ok(await sb.from('wallets').insert({ name: w.name, kind: w.kind, initial_balance: w.initial_balance }));
+export const addWallet = async (w) =>
+  ok(await sb.from('wallets').insert({ name: w.name, kind: w.kind, initial_balance: w.initial_balance ?? 0 }));
+export const updateWallet = async (id, patch) => ok(await sb.from('wallets').update(patch).eq('id', id));
 export const deleteWallet = async (id) => ok(await sb.from('wallets').delete().eq('id', id));
 
 // ---------- Kategori ----------
 export const listCategories = async () =>
   ok(await sb.from('categories').select('id,type,name,icon,monthly_budget,created_at').order('created_at'));
-export const saveCategory = async (c) => {
-  const row = { type: c.type, name: c.name, icon: c.icon, monthly_budget: c.monthly_budget || null };
-  return c.id
-    ? ok(await sb.from('categories').update(row).eq('id', c.id))
-    : ok(await sb.from('categories').insert(row));
-};
+export const addCategory = async (c) =>
+  ok(await sb.from('categories').insert({ type: c.type, name: c.name, icon: c.icon, monthly_budget: c.monthly_budget ?? null }));
+export const updateCategory = async (id, patch) => ok(await sb.from('categories').update(patch).eq('id', id));
 export const deleteCategory = async (id) => ok(await sb.from('categories').delete().eq('id', id));
 
 // ---------- Transaksi ----------
-export const listTx = async (from, to, limit = 1000) =>
-  ok(
-    await sb
-      .from('transactions')
-      .select('*')
-      .gte('trx_date', from)
-      .lte('trx_date', to)
+// Filter: { from, to, types, limit }. Semua opsional.
+export const listTx = async ({ from, to, types, limit = 1000 } = {}) => {
+  let q = sb.from('transactions').select('*');
+  if (from) q = q.gte('trx_date', from);
+  if (to) q = q.lte('trx_date', to);
+  if (types?.length) q = q.in('type', types);
+  return ok(
+    await q
       .order('trx_date', { ascending: false })
       .order('trx_time', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit)
   );
+};
+export const recentTx = async (n = 5) => listTx({ limit: n });
 export const addTx = async (row) => ok(await sb.from('transactions').insert(row));
 export const updateTx = async (id, row) => ok(await sb.from('transactions').update(row).eq('id', id));
 export const deleteTx = async (id) => ok(await sb.from('transactions').delete().eq('id', id));
@@ -65,60 +72,98 @@ export const listTargets = async () =>
       .select('id,kind,name,goal_amount,initial_amount,market_value,deadline,saved_amount,created_at')
       .order('created_at')
   );
-export const saveTarget = async (t) => {
-  const row = {
-    kind: t.kind,
-    name: t.name,
-    goal_amount: t.goal_amount,
-    initial_amount: t.initial_amount,
-    market_value: t.kind === 'investment' ? t.market_value : null,
-    deadline: t.deadline || null,
-  };
-  return t.id ? ok(await sb.from('targets').update(row).eq('id', t.id)) : ok(await sb.from('targets').insert(row));
-};
-export const setMarketValue = async (id, value) => ok(await sb.from('targets').update({ market_value: value }).eq('id', id));
+export const addTarget = async (row) => ok(await sb.from('targets').insert(row));
+export const updateTarget = async (id, patch) => ok(await sb.from('targets').update(patch).eq('id', id));
 export const deleteTarget = async (id) => ok(await sb.from('targets').delete().eq('id', id));
 
 // ---------- Lokasi mangkal ----------
-export const listAreas = async () => ok(await sb.from('areas').select('id,name').order('created_at'));
-export const listSpots = async () => ok(await sb.from('spots').select('id,area_id,name').order('created_at'));
-export const addArea = async (name) => ok(await sb.from('areas').insert({ name }));
+// Setiap daerah membawa daftar titiknya: { id, name, spots: [{ id, name }] }
+export const listAreas = async () => {
+  const rows = ok(
+    await sb.from('areas').select('id,name,created_at,spots(id,name,created_at)').order('created_at')
+  );
+  return rows.map((a) => ({
+    ...a,
+    spots: (a.spots || []).slice().sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))),
+  }));
+};
+export const addArea = async (name) => ok(await sb.from('areas').insert({ name }).select('id,name').single());
+export const renameArea = async (id, name) => ok(await sb.from('areas').update({ name }).eq('id', id));
 export const deleteArea = async (id) => ok(await sb.from('areas').delete().eq('id', id));
-export const addSpot = async (area_id, name) => ok(await sb.from('spots').insert({ area_id, name }));
+export const addSpots = async (area_id, names) => {
+  const existing = ok(await sb.from('spots').select('name').eq('area_id', area_id));
+  const have = new Set(existing.map((s) => s.name.toLowerCase()));
+  const rows = names.filter((n) => !have.has(n.toLowerCase())).map((name) => ({ area_id, name }));
+  if (!rows.length) return [];
+  return ok(await sb.from('spots').insert(rows));
+};
 export const deleteSpot = async (id) => ok(await sb.from('spots').delete().eq('id', id));
 export const radar = async (from, to, h1, h2) =>
   ok(await sb.rpc('radar_mangkal', { p_from: from, p_to: to, p_hour_start: h1, p_hour_end: h2 }));
 
 // ---------- Kendaraan ----------
+const VEHICLE_COLS = 'oil_interval_km,oil_reset_at';
+
+// Hasil: { settings, logs, kmSinceReset } (log dihitung sejak terakhir ganti oli)
 export const getVehicle = async () => {
-  let row = ok(await sb.from('vehicle_settings').select('oil_interval_km,oil_reset_at').maybeSingle());
-  if (!row) {
+  let settings = ok(await sb.from('vehicle_settings').select(VEHICLE_COLS).maybeSingle());
+  if (!settings) {
     ok(await sb.from('vehicle_settings').insert({}));
-    row = ok(await sb.from('vehicle_settings').select('oil_interval_km,oil_reset_at').single());
+    settings = ok(await sb.from('vehicle_settings').select(VEHICLE_COLS).single());
   }
-  return row;
-};
-export const listVehicleLogs = async (sinceIso) =>
-  ok(
+  const since = settings.oil_reset_at || '1970-01-01T00:00:00Z';
+  const logs = ok(
     await sb
       .from('vehicle_logs')
       .select('id,log_date,km,created_at')
-      .gte('created_at', sinceIso)
+      .gte('created_at', since)
       .order('log_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(200)
   );
-export const addVehicleLog = async (km, log_date) => ok(await sb.from('vehicle_logs').insert({ km, log_date }));
-export const deleteVehicleLog = async (id) => ok(await sb.from('vehicle_logs').delete().eq('id', id));
-export const resetOil = async (userId) =>
-  ok(await sb.from('vehicle_settings').update({ oil_reset_at: new Date().toISOString() }).eq('user_id', userId));
-export const setOilInterval = async (userId, km) =>
-  ok(await sb.from('vehicle_settings').update({ oil_interval_km: km }).eq('user_id', userId));
+  const kmSinceReset = logs.reduce((a, l) => a + Number(l.km), 0);
+  return { settings, logs, kmSinceReset };
+};
+export const addKm = async (km, log_date) => ok(await sb.from('vehicle_logs').insert({ km, log_date }));
+export const deleteKm = async (id) => ok(await sb.from('vehicle_logs').delete().eq('id', id));
+export const resetOil = async () =>
+  ok(await sb.from('vehicle_settings').update({ oil_reset_at: new Date().toISOString() }).eq('user_id', await uid()));
+export const setOilInterval = async (km) =>
+  ok(await sb.from('vehicle_settings').update({ oil_interval_km: km }).eq('user_id', await uid()));
 
 // ---------- Target harian ----------
 export const getDailyTarget = async () => {
   const row = ok(await sb.from('user_settings').select('daily_target').maybeSingle());
   return row ? Number(row.daily_target) : 0;
 };
-export const setDailyTarget = async (userId, value) =>
-  ok(await sb.from('user_settings').upsert({ user_id: userId, daily_target: value, updated_at: new Date().toISOString() }));
+export const setDailyTarget = async (value) =>
+  ok(await sb.from('user_settings').upsert({ user_id: await uid(), daily_target: value, updated_at: new Date().toISOString() }));
+
+// ---------- Ekspor cadangan ----------
+export const exportAll = async () => {
+  const get = async (table, order = 'created_at') => ok(await sb.from(table).select('*').order(order).limit(50000));
+  const [wallets, categories, targets, transactions, areas, spots, vehicle_logs] = await Promise.all([
+    get('wallets'),
+    get('categories'),
+    get('targets'),
+    get('transactions'),
+    get('areas'),
+    get('spots'),
+    get('vehicle_logs'),
+  ]);
+  const user_settings = ok(await sb.from('user_settings').select('*').maybeSingle());
+  const vehicle_settings = ok(await sb.from('vehicle_settings').select('*').maybeSingle());
+  return {
+    app: 'catatan-ojol',
+    exported_at: new Date().toISOString(),
+    wallets,
+    categories,
+    targets,
+    transactions,
+    areas,
+    spots,
+    vehicle_logs,
+    user_settings,
+    vehicle_settings,
+  };
+};

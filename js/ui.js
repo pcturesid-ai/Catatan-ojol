@@ -53,3 +53,5 @@ export const emptyState = (text) => `<p class="text-sm text-slate-500 py-6 text-
 
 export const progressBar = (value, color = 'bg-brand-600') =>
   `<div class="h-2.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${value}%"></div></div>`;
+
+export { esc } from './utils.js';
