@@ -35,9 +35,13 @@
     <div class="text-center mb-8">
       <div class="mx-auto w-16 h-16 rounded-2xl bg-brand-700 flex items-center justify-center text-3xl shadow-lg">🛵</div>
       <h1 class="mt-4 text-2xl font-extrabold text-slate-900">Catatan Ojol</h1>
-      <p class="text-sm text-slate-500 mt-1">Catat pemasukan dan pengeluaran harianmu</p>
+      <p class="text-sm text-slate-500 mt-1">Kelola keuangan ojolmu dari mana saja</p>
     </div>
     <form id="auth-form" class="space-y-4" autocomplete="on">
+      <div id="auth-name-wrap" class="hidden">
+        <label for="auth-name" class="block text-sm font-medium mb-1">Nama lengkap</label>
+        <input id="auth-name" type="text" maxlength="60" autocomplete="name" class="field" placeholder="Nama kamu" />
+      </div>
       <div>
         <label for="auth-email" class="block text-sm font-medium mb-1">Email</label>
         <input id="auth-email" type="email" required autocomplete="email" class="field" placeholder="nama@email.com" />
@@ -54,74 +58,37 @@
 
   <!-- Aplikasi utama -->
   <div id="app" class="hidden max-w-md mx-auto min-h-screen relative pb-28">
-    <header class="px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-4 bg-brand-700 text-white rounded-b-3xl">
-      <p id="hdr-sub" class="text-sm text-brand-100"></p>
-      <h1 id="hdr-title" class="text-xl font-bold"></h1>
+    <header class="px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-6 bg-brand-700 text-white rounded-b-3xl">
+      <div class="flex items-center gap-3">
+        <button id="hdr-back" class="hidden w-9 h-9 -ml-2 rounded-full bg-white/15 text-xl leading-none" aria-label="Kembali">←</button>
+        <div class="min-w-0">
+          <p id="hdr-sub" class="text-sm text-brand-100 truncate"></p>
+          <h1 id="hdr-title" class="text-xl font-bold truncate"></h1>
+        </div>
+      </div>
     </header>
 
-    <main class="px-4 -mt-3">
-      <!-- Beranda -->
-      <section id="view-home" class="view space-y-4"></section>
-      <!-- Rekap -->
-      <section id="view-recap" class="view hidden space-y-4"></section>
-      <!-- Pengaturan -->
-      <section id="view-settings" class="view hidden space-y-4"></section>
-    </main>
+    <main id="view" class="px-4 -mt-3 space-y-4"></main>
 
-    <!-- Tombol tambah -->
-    <button id="fab" aria-label="Tambah catatan" class="fixed z-30 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 w-14 h-14 rounded-full bg-amber-500 text-white text-3xl font-light shadow-xl active:scale-95 transition">+</button>
+    <button id="fab" aria-label="Catat transaksi" class="fixed z-30 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 w-14 h-14 rounded-full bg-amber-500 text-white text-3xl font-light shadow-xl active:scale-95 transition">+</button>
 
-    <!-- Navigasi bawah -->
     <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)]">
-      <div class="max-w-md mx-auto grid grid-cols-3">
+      <div class="max-w-md mx-auto grid grid-cols-4">
         <button data-tab="home" class="tab-btn"><span class="text-xl">🏠</span><span>Beranda</span></button>
-        <button data-tab="recap" class="tab-btn"><span class="text-xl">📊</span><span>Rekap</span></button>
-        <button data-tab="settings" class="tab-btn"><span class="text-xl">⚙️</span><span>Pengaturan</span></button>
+        <button data-tab="history" class="tab-btn"><span class="text-xl">🧾</span><span>Riwayat</span></button>
+        <button data-tab="analytics" class="tab-btn"><span class="text-xl">📊</span><span>Analitik</span></button>
+        <button data-tab="account" class="tab-btn"><span class="text-xl">👤</span><span>Akun</span></button>
       </div>
     </nav>
   </div>
 
-  <!-- Lembar tambah catatan -->
+  <!-- Lembar bawah untuk form -->
   <div id="sheet" class="hidden fixed inset-0 z-40">
     <div id="sheet-backdrop" class="absolute inset-0 bg-black/40"></div>
-    <form id="tx-form" class="absolute bottom-0 inset-x-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] space-y-4 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-bold">Catatan baru</h2>
-        <button type="button" id="sheet-close" class="text-slate-400 text-2xl leading-none px-2" aria-label="Tutup">×</button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-        <button type="button" data-type="income" class="type-btn">Pemasukan</button>
-        <button type="button" data-type="expense" class="type-btn">Pengeluaran</button>
-      </div>
-
-      <div>
-        <label for="tx-amount" class="block text-sm font-medium mb-1">Jumlah (Rp)</label>
-        <input id="tx-amount" type="text" inputmode="numeric" required class="field text-2xl font-bold" placeholder="0" autocomplete="off" />
-      </div>
-
-      <div>
-        <p class="text-sm font-medium mb-2">Kategori</p>
-        <div id="tx-cats" class="flex flex-wrap gap-2"></div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label for="tx-date" class="block text-sm font-medium mb-1">Tanggal</label>
-          <input id="tx-date" type="date" required class="field" />
-        </div>
-        <div>
-          <label for="tx-note" class="block text-sm font-medium mb-1">Catatan</label>
-          <input id="tx-note" type="text" maxlength="200" class="field" placeholder="Opsional" />
-        </div>
-      </div>
-
-      <p id="tx-msg" class="text-sm text-red-600 min-h-[1.25rem]" role="alert"></p>
-      <button id="tx-submit" type="submit" class="btn-primary w-full">Simpan</button>
-    </form>
+    <div id="sheet-body" class="absolute bottom-0 inset-x-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] max-h-[92vh] overflow-y-auto"></div>
   </div>
 
-  <div id="toast" class="hidden fixed z-50 left-1/2 -translate-x-1/2 bottom-28 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg"></div>
+  <div id="toast" class="hidden fixed z-50 left-1/2 -translate-x-1/2 bottom-28 max-w-[90vw] text-center bg-slate-900 text-white text-sm px-4 py-2 rounded-2xl shadow-lg"></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

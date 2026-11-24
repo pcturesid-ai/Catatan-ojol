@@ -60,6 +60,7 @@ body { overscroll-behavior-y: none; }
 }
 .type-btn.active-income { background: #fff; color: #0f766e; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 .type-btn.active-expense { background: #fff; color: #dc2626; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.type-btn.active-transfer { background: #fff; color: #2563eb; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 
 .chip {
   padding: 0.45rem 0.85rem;
@@ -72,3 +73,25 @@ body { overscroll-behavior-y: none; }
 
 .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
 .bar { width: 100%; max-width: 26px; border-radius: 6px 6px 0 0; min-height: 3px; }
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.9rem 0.25rem;
+  text-align: left;
+  font-weight: 500;
+}
+.menu-row + .menu-row { border-top: 1px solid #f1f5f9; }
+
+.donut { border-radius: 9999px; position: relative; }
+.donut::after {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  background: #fff;
+  border-radius: 9999px;
+}
+
+details > summary::-webkit-details-marker { display: none; }
