@@ -1,46 +1,115 @@
-// Service worker sederhana: cache file aplikasi agar bisa dibuka cepat.
-// Permintaan ke Supabase dan CDN lain tidak di-cache supaya data selalu segar.
-const CACHE = 'catatan-ojol-v1';
-const SHELL = [
-  './',
-  'index.html',
-  'css/style.css',
-  'js/app.js',
-  'js/api.js',
-  'js/config.js',
-  'js/utils.js',
-  'manifest.webmanifest',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
+// ============================================================
+// MOCATAT - SERVICE WORKER (sw.js)
+// Auto-Update Cache & Supabase Safe
+// ============================================================
+
+const CACHE_NAME = 'mocatat-cache-v66';
+
+const ASSETS_TO_CACHE = [
+    './',
+    './index.html',
+    './riwayat.html',
+    './analitik.html',
+    './dompet.html',
+    './target.html',
+    './kategori.html',
+    './lokasi.html',
+    './kendaraan.html',
+    './edukasi.html',
+    './style.css',
+    './app.js',
+    './core.js',
+    './backend.js',
+    './fitur-beranda.js',
+    './fitur-transaksi.js',
+    './fitur-analitik.js',
+    './fitur-kelola.js',
+    './fitur-admin.js',
+    './manifest.json',
+    './1789744450301.png',
+    './1789744567730.png'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+// 1. INSTALL: Simpan aset inti & langsung aktifkan SW baru tanpa menunggu tab ditutup
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(async (cache) => {
+            // Gunakan allSettled agar jika ada 1 file opsional belum ada, SW tetap sukses terpasang
+            await Promise.allSettled(
+                ASSETS_TO_CACHE.map((url) => cache.add(url))
+            );
+        })
+    );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+// 2. ACTIVATE: Hapus seluruh cache versi lama secara otomatis
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cache) => {
+                    if (cache !== CACHE_NAME) {
+                        return caches.delete(cache);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+// 3. FETCH: Network-First untuk file aplikasi (agar update langsung tampil) & lewati jalur Supabase
+self.addEventListener('fetch', (event) => {
+    const req = event.request;
 
-  // Jaringan dulu, cache sebagai cadangan saat offline
-  e.respondWith(
-    fetch(req)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
-        return res;
-      })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html')))
-  );
+    // Hanya tangani request GET
+    if (req.method !== 'GET') return;
+
+    const url = new URL(req.url);
+
+    // Jangan pernah meng-cache jalur database / auth Supabase, pustaka CDN, dan font Google
+    if (
+        url.hostname.includes('supabase.co') ||
+        url.hostname.includes('esm.sh') ||
+        url.hostname.includes('googleapis.com') ||
+        url.hostname.includes('gstatic.com') ||
+        url.protocol.startsWith('chrome-extension')
+    ) {
+        return;
+    }
+
+    // Strategi Network-First: Ambil versi terbaru dari server, simpan ke cache, atau gunakan cache jika sinyal hilang
+    event.respondWith(
+        fetch(req)
+            .then((networkRes) => {
+                if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+                    const resClone = networkRes.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(req, resClone);
+                    });
+                }
+                return networkRes;
+            })
+            .catch(() => {
+                return caches.match(req).then((cachedRes) => {
+                    if (cachedRes) return cachedRes;
+                    if (req.mode === 'navigate') {
+                        return caches.match('./index.html');
+                    }
+                });
+            })
+    );
+});
+
+// 4. DUKUNGAN KLIK NOTIFIKASI
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if ('focus' in client) return client.focus();
+            }
+            if (clients.openWindow) return clients.openWindow('./index.html');
+        })
+    );
 });

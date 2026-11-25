@@ -1,128 +1,271 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f766e" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <title>Catatan Ojol</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" type="image/png" href="icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 900: '#134e4a' },
-          },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-        },
-      },
-    };
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MoCatat - Keuangan Pribadi</title>
+    <meta name="theme-color" content="#166e6a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="1789744450301.png">
+    <link rel="icon" type="image/png" href="1789744567730.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- PANGGIL FILE CSS SENTRAL -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+<body>
+    <div class="app-container">
 
-  <!-- Layar masuk / daftar -->
-  <section id="auth-screen" class="hidden min-h-screen flex flex-col justify-center px-6 py-10 max-w-md mx-auto">
-    <div class="text-center mb-8">
-      <div class="mx-auto w-16 h-16 rounded-2xl bg-brand-700 flex items-center justify-center text-3xl shadow-lg">🛵</div>
-      <h1 class="mt-4 text-2xl font-extrabold text-slate-900">Catatan Ojol</h1>
-      <p class="text-sm text-slate-500 mt-1">Catat pemasukan dan pengeluaran harianmu</p>
+        <div id="loading-screen" class="loading-screen">Memuat Data...<div class="spinner"></div></div>
+
+        <!-- HALAMAN LOGIN -->
+        <div id="page-login" class="page active">
+            <div class="login-wrapper">
+                <div class="login-logo"><img src="1789744450301.png" alt="Logo MoCatat"></div>
+                <h2 class="login-title" id="auth-title">Masuk Akun</h2>
+                <p class="login-desc" id="auth-desc">Kelola keuanganmu dari mana saja.</p>
+                <div id="auth-error" class="error-msg"></div>
+                <div class="form-group" id="auth-name-group" style="display: none;"><label class="form-label">Nama Lengkap</label><input type="text" id="auth-name" class="form-input" placeholder="Masukkan nama kamu"></div>
+                <div class="form-group"><label class="form-label">Email</label><input type="email" id="auth-email" class="form-input" placeholder="contoh@email.com" required></div>
+                <div class="form-group"><label class="form-label">Password</label><input type="password" id="auth-password" class="form-input" placeholder="Minimal 6 karakter" required></div>
+                <button class="btn-submit" id="btn-auth" onclick="window.prosesAuth()">Masuk</button>
+                <div class="auth-toggle" id="auth-toggle-text">Belum punya akun? <span onclick="window.toggleAuthMode()">Daftar di sini</span></div>
+            </div>
+        </div>
+
+        <!-- HALAMAN DASHBOARD / BERANDA (REDESIGNED FINTECH HERO) -->
+        <div id="page-dashboard" class="page">
+            <header class="header-bg" style="padding: 22px 20px 26px 20px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;">
+                <!-- BARIS 1: PROFIL AVATAR & NOTIFIKASI -->
+                <div class="greeting" style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <div id="hero-avatar-initial" onclick="window.switchTab('page-akun', 3)" style="width: 42px; height: 42px; border-radius: 14px; background: rgba(255,255,255,0.2); border: 1.5px solid rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #ffffff; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+                            M
+                        </div>
+                        <div style="min-width: 0;">
+                            <div id="greeting-time-text" style="font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,0.85); line-height: 1.2; margin-bottom: 2px;">Selamat Pagi 👋</div>
+                            <div id="user-name" style="font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pengguna</div>
+                        </div>
+                    </div>
+
+                    <div style="position: relative; display: inline-block; flex-shrink: 0;">
+                        <span class="material-icons-round" onclick="window.bukaNotifikasi()" style="cursor: pointer;">notifications</span>
+                        <span id="notif-badge" style="position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; background: #ef4444; border-radius: 50%; border: 2px solid #187773; display: none;"></span>
+                    </div>
+                </div>
+                
+                <!-- BARIS 2: TOTAL KEKAYAAN BERSIH -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.82); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 5px;">
+                        <span class="material-icons-round" style="font-size: 14px; opacity: 0.9;">verified_user</span> TOTAL KEKAYAAN BERSIH
+                    </div>
+                    <div class="total-amount" id="net-worth" style="font-size: 33px; margin-top: 3px;">Rp 0</div>
+                </div>
+                
+                <!-- BARIS 3: BENTO GLASS 2 KOLOM SIMETRIS (100% FULL WIDTH) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                    <div onclick="window.location.href='dompet.html'" style="background: rgba(255,255,255,0.14); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.22); border-radius: 16px; padding: 11px 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <div style="width: 34px; height: 34px; border-radius: 10px; background: rgba(167, 243, 208, 0.22); color: #a7f3d0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <span class="material-icons-round" style="font-size: 18px;">account_balance_wallet</span>
+                        </div>
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Uang Cair</div>
+                            <div id="total-balance" style="font-size: 13.5px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">Rp 0</div>
+                        </div>
+                    </div>
+
+                    <div onclick="window.location.href='target.html'" style="background: rgba(255,255,255,0.14); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.22); border-radius: 16px; padding: 11px 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <div style="width: 34px; height: 34px; border-radius: 10px; background: rgba(253, 224, 71, 0.22); color: #fde047; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <span class="material-icons-round" style="font-size: 18px;">savings</span>
+                        </div>
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Aset & Target</div>
+                            <div id="total-asset" style="font-size: 13.5px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TOMBOL AKSI CEPAT (PEMASUKAN, PENGELUARAN, TRANSFER) -->
+            <div class="main-services-card" style="margin: 16px 20px 18px 20px;">
+                <div class="service-item" onclick="window.openModalTrans('in')"><div class="service-icon teal-theme"><span class="material-icons-round">south_west</span></div><span>Pemasukan</span></div>
+                <div class="service-item" onclick="window.openModalTrans('out')"><div class="service-icon orange-theme"><span class="material-icons-round">north_east</span></div><span>Pengeluaran</span></div>
+                <div class="service-item" onclick="window.openModalTransfer()"><div class="service-icon blue-theme"><span class="material-icons-round">sync_alt</span></div><span>Transfer</span></div>
+            </div>
+
+            <!-- SEKSI SLIDE DOMPET AKTIF (MINI FINTECH BANK CARDS) -->
+            <div style="padding: 0 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #0f172a; letter-spacing: -0.2px;">Dompet Aktif</span>
+                <a href="dompet.html" style="font-size: 12px; font-weight: 800; color: #0f766e; display: inline-flex; align-items: center; gap: 3px;">Kelola <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span></a>
+            </div>
+            <div class="wallet-slider" id="wallet-container" style="margin-top: 0; padding: 2px 20px 18px 20px;"></div>
+
+            <!-- SMART ALOKASI WIDGET -->
+            <div id="smart-allocation-card" style="display: none; margin: 0 20px 22px 20px; background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%); border-radius: 22px; padding: 16px; box-shadow: 0 6px 16px rgba(15,23,42,0.04); border: 1.5px solid #ffee58;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <div style="width: 36px; height: 36px; background: #fff59d; color: #f57f17; border-radius: 12px; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+                        <span class="material-icons-round" style="font-size: 20px;">lightbulb</span>
+                    </div>
+                    <div style="font-size: 14px; font-weight: 800; color: #f57f17;" id="judul-saran-alokasi">Saran Alokasi Sisa Uang</div>
+                </div>
+                <div id="teks-saran-alokasi" style="font-size: 12.5px; color: #334155; margin-bottom: 14px; font-weight: 600; line-height: 1.5;"></div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-masuk-target" style="flex: 1; background: white; border: 1.5px solid #fbc02d; color: #d97706; padding: 11px; border-radius: 13px; font-size: 12px; font-weight: 800; cursor: pointer;">Masuk Target</button>
+                    <button id="btn-self-reward" style="flex: 1; border: none; padding: 11px; border-radius: 13px; font-size: 12px; font-weight: 800; cursor: pointer;">Self Reward</button>
+                </div>
+            </div>
+
+            <!-- MONITOR KENDARAAN (ANCHOR UNTUK TRIO SLIDER) -->
+            <div style="margin: 0 20px 14px 20px;" onclick="window.location.href='kendaraan.html'">
+                <div style="background: white; border-radius: 20px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 15px rgba(0,0,0,0.02); cursor: pointer; border: 1px solid rgba(0,0,0,0.02);">
+                    <div style="display: flex; align-items: center; gap: 14px;"><div style="width: 44px; height: 44px; background: #e0f2f1; color: #249a95; border-radius: 14px; display: flex; justify-content: center; align-items: center;"><span class="material-icons-round" style="font-size: 22px;">two_wheeler</span></div><div><div style="font-size: 14px; font-weight: 800; color: #1a1a1a; margin-bottom: 3px;">Monitor Kendaraan</div><div style="font-size: 11px; color: #475569; font-weight: 600;">Pantau KM dan jadwal ganti oli</div></div></div>
+                    <div style="background: #f8fafc; padding: 6px; border-radius: 10px; display: flex; color:#94a3b8;"><span class="material-icons-round" style="font-size: 18px;">chevron_right</span></div>
+                </div>
+            </div>
+
+            <!-- LOKASI & STRATEGI MANGKAL -->
+            <div style="margin: 0 20px 25px 20px;" onclick="window.location.href='lokasi.html'">
+                <div style="background: white; border-radius: 20px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 15px rgba(0,0,0,0.02); cursor: pointer; border: 1px solid rgba(0,0,0,0.02);">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="width: 44px; height: 44px; background: #e8f5e9; color: #2e7d32; border-radius: 14px; display: flex; justify-content: center; align-items: center;">
+                            <span class="material-icons-round" style="font-size: 22px;">radar</span>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 800; color: #1a1a1a; margin-bottom: 3px;">Lokasi & Strategi Mangkal</div>
+                            <div style="font-size: 11px; color: #475569; font-weight: 600;" id="info-daerah-beranda">Kelola daerah & cek titik gacor per jam</div>
+                        </div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 6px; border-radius: 10px; display: flex; color:#94a3b8;">
+                        <span class="material-icons-round" style="font-size: 18px;">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-wrapper">
+                <div class="history-header"><h3>Transaksi Terakhir</h3><a href="riwayat.html" style="font-size: 12.5px; color: #0f766e; font-weight: 800;">Lihat Semua ➔</a></div>
+                <div id="transaction-container"></div>
+            </div>
+        </div>
+
+        <!-- HALAMAN NOTIFIKASI -->
+        <div id="page-notifikasi" class="page">
+            <header class="header-simple"><span class="material-icons-round btn-back" onclick="window.switchTab('page-dashboard', 0)">arrow_back_ios_new</span><span>Pusat Notifikasi</span></header>
+            <div class="list-wrapper" id="notif-page-container"></div>
+        </div>
+
+        <!-- HALAMAN AKUN -->
+        <div id="page-akun" class="page">
+            <header class="header-simple">Profil & Pengaturan</header>
+            <div class="profile-section">
+                <div class="profile-avatar"><img src="1789744567730.png" alt="Logo MoCatat" style="width: 100%; height: 100%; object-fit: contain; border-radius: 14px;"></div>
+                <div class="profile-info"><div class="profile-name" id="profile-name-text">Pengguna</div><div class="profile-email" id="profile-email-text">user@email.com</div></div>
+            </div>
+            
+            <div class="section-title">Fitur Pintar</div>
+            <div class="settings-card">
+                <div class="settings-item" onclick="window.toggleFirebaseNotification()"><div class="settings-icon bg-orange"><span class="material-icons-round">notifications_active</span></div><div class="settings-text" id="notif-status-text">Izinkan Notifikasi Firebase</div><span class="material-icons-round settings-chevron" id="notif-chevron">toggle_off</span></div>
+            </div>
+
+            <div class="section-title">Pencatatan</div>
+            <div class="settings-card">
+                <div class="settings-item" onclick="window.location.href='kategori.html'"><div class="settings-icon bg-orange"><span class="material-icons-round">category</span></div><div class="settings-text">Pengaturan Kategori</div><span class="material-icons-round settings-chevron">chevron_right</span></div>
+                <div class="settings-item" onclick="window.location.href='dompet.html'"><div class="settings-icon bg-green"><span class="material-icons-round">account_balance_wallet</span></div><div class="settings-text">Daftar Dompet & Saldo</div><span class="material-icons-round settings-chevron">chevron_right</span></div>
+                <div class="settings-item" onclick="window.location.href='target.html'"><div class="settings-icon bg-purple"><span class="material-icons-round">flag</span></div><div class="settings-text">Target Keuangan</div><span class="material-icons-round settings-chevron">chevron_right</span></div>
+                <div class="settings-item" onclick="window.location.href='lokasi.html'"><div class="settings-icon bg-blue"><span class="material-icons-round">place</span></div><div class="settings-text">Lokasi & Daerah Mangkal</div><span class="material-icons-round settings-chevron">chevron_right</span></div>
+            </div>
+
+            <div class="section-title">Umum</div>
+            <div class="settings-card">
+                <div class="settings-item" onclick="window.exportDataJSON()">
+                    <div class="settings-icon" style="background:#e0f2f1; color:#249a95;">
+                        <span class="material-icons-round">download</span>
+                    </div>
+                    <div class="settings-text">Ekspor Data (Backup JSON)</div>
+                    <span class="material-icons-round settings-chevron">chevron_right</span>
+                </div>
+                
+                <div class="settings-item" onclick="window.logoutApp()">
+                    <div class="settings-icon bg-red"><span class="material-icons-round">logout</span></div>
+                    <div class="settings-text text-red" style="color:#dc2626; font-weight:800;">Keluar Akun</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL TRANSAKSI BERANDA (ERGONOMIC ONE-HANDED LAYOUT) -->
+        <div id="modal-input" class="modal-overlay">
+            <div class="modal-box">
+                <div class="modal-handle"></div>
+                <div class="modal-header"><h3 id="modal-title">Catat Transaksi</h3><button class="btn-close" onclick="window.closeModal('modal-input')"><span class="material-icons-round">close</span></button></div>
+                <div id="error-msg" class="error-msg"></div>
+                <input type="hidden" id="input-type"><input type="hidden" id="input-trx-id">
+
+                <!-- 1. HERO NOMINAL -->
+                <div class="form-group">
+                    <label class="form-label">Nominal Transaksi (Rp)</label>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-amount" class="form-input format-rupiah" placeholder="0" required>
+                </div>
+
+                <!-- 2. LAYANAN GRAB -->
+                <div class="form-group" id="grab-service-group" style="display: none;">
+                    <label class="form-label">Layanan Grab (Klik untuk isi otomatis)</label>
+                    <div class="chip-group">
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabBike', this)">🏍️ GrabBike</div>
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabBike Hemat', this)">🛵 GrabBike Hemat</div>
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabCar', this)">🚗 GrabCar</div>
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabFood', this)">🍔 GrabFood</div>
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabExpress', this)">📦 GrabExpress</div>
+                        <div class="chip grab-chip" onclick="window.selectGrabService('GrabMart', this)">🛒 GrabMart</div>
+                    </div>
+                    <input type="hidden" id="input-grab-service">
+                </div>
+
+                <!-- 3. INPUT LOKASI PINTAR -->
+                <div class="form-group" id="location-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                        <label class="form-label" style="margin-bottom: 0;">Area / Lokasi Jemput (Opsional)</label>
+                        <a href="lokasi.html" style="font-size: 11.5px; font-weight: 800; color: #0f766e;">+ Kelola Lokasi</a>
+                    </div>
+                    <input type="text" id="input-location" class="form-input" placeholder="Ketik misal: Jl. Batalion" autocomplete="off" autocorrect="off" spellcheck="false">
+                </div>
+
+                <!-- 4. KETERANGAN -->
+                <div class="form-group">
+                    <label class="form-label">Keterangan</label>
+                    <input type="text" id="input-note" class="form-input" placeholder="Misal: GrabBike / Beli Bensin" required>
+                </div>
+
+                <!-- 5. PILIH DOMPET & KATEGORI -->
+                <div class="form-group"><label class="form-label">Pilih Dompet</label><div class="chip-group" id="input-wallet-chips"></div><input type="hidden" id="input-wallet"></div>
+                <div class="form-group" id="category-group-container"><label class="form-label">Kategori</label><div class="chip-group" id="input-category-chips"></div><input type="hidden" id="input-category"></div>
+                <div class="form-group" id="target-wallet-group" style="display: none;"><label class="form-label">Dompet Tujuan</label><div class="chip-group" id="input-target-wallet-chips"></div><input type="hidden" id="input-target-wallet"></div>
+                
+                <!-- 6. TANGGAL & WAKTU -->
+                <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                    <div style="flex: 1;"><label class="form-label">Tanggal</label><input type="date" id="input-date" class="form-input" required></div>
+                    <div style="flex: 1;"><label class="form-label">Waktu</label><input type="time" id="input-time" class="form-input" required></div>
+                </div>
+
+                <button class="btn-submit" onclick="window.simpanTransaksi()">Simpan Transaksi</button>
+            </div>
+        </div>
+        
+        <!-- CUSTOM DIALOG -->
+        <div id="custom-dialog" class="custom-dialog-overlay"><div class="custom-dialog-box"><div class="custom-dialog-icon" id="dialog-icon"><span class="material-icons-round">info</span></div><h3 class="custom-dialog-title" id="dialog-title">Informasi</h3><p class="custom-dialog-msg" id="dialog-msg">Pesan akan tampil di sini.</p><div class="custom-dialog-actions" id="dialog-actions"></div></div></div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="bottom-nav" id="bottom-navigation">
+            <div class="nav-item active" onclick="window.switchTab('page-dashboard', 0)"><div class="nav-icon-wrapper"><span class="material-icons-round">home</span></div><span>Beranda</span></div>
+            <div class="nav-item" onclick="window.location.href='riwayat.html'"><div class="nav-icon-wrapper"><span class="material-icons-round">history</span></div><span>Riwayat</span></div>
+            <div class="nav-item" onclick="window.location.href='analitik.html'"><div class="nav-icon-wrapper"><span class="material-icons-round">bar_chart</span></div><span>Analitik</span></div>
+            <div class="nav-item" onclick="window.switchTab('page-akun', 3)"><div class="nav-icon-wrapper"><span class="material-icons-round">person</span></div><span>Akun</span></div>
+        </nav>
     </div>
-    <form id="auth-form" class="space-y-4" autocomplete="on">
-      <div>
-        <label for="auth-email" class="block text-sm font-medium mb-1">Email</label>
-        <input id="auth-email" type="email" required autocomplete="email" class="field" placeholder="nama@email.com" />
-      </div>
-      <div>
-        <label for="auth-pass" class="block text-sm font-medium mb-1">Kata sandi</label>
-        <input id="auth-pass" type="password" required minlength="6" autocomplete="current-password" class="field" placeholder="Minimal 6 karakter" />
-      </div>
-      <p id="auth-msg" class="text-sm min-h-[1.25rem]" role="status"></p>
-      <button id="auth-submit" type="submit" class="btn-primary w-full">Masuk</button>
-      <button id="auth-toggle" type="button" class="w-full text-sm text-brand-700 font-medium py-2">Belum punya akun? Daftar</button>
-    </form>
-  </section>
 
-  <!-- Aplikasi utama -->
-  <div id="app" class="hidden max-w-md mx-auto min-h-screen relative pb-28">
-    <header class="px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-4 bg-brand-700 text-white rounded-b-3xl">
-      <p id="hdr-sub" class="text-sm text-brand-100"></p>
-      <h1 id="hdr-title" class="text-xl font-bold"></h1>
-    </header>
-
-    <main class="px-4 -mt-3">
-      <!-- Beranda -->
-      <section id="view-home" class="view space-y-4"></section>
-      <!-- Rekap -->
-      <section id="view-recap" class="view hidden space-y-4"></section>
-      <!-- Pengaturan -->
-      <section id="view-settings" class="view hidden space-y-4"></section>
-    </main>
-
-    <!-- Tombol tambah -->
-    <button id="fab" aria-label="Tambah catatan" class="fixed z-30 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 w-14 h-14 rounded-full bg-amber-500 text-white text-3xl font-light shadow-xl active:scale-95 transition">+</button>
-
-    <!-- Navigasi bawah -->
-    <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)]">
-      <div class="max-w-md mx-auto grid grid-cols-3">
-        <button data-tab="home" class="tab-btn"><span class="text-xl">🏠</span><span>Beranda</span></button>
-        <button data-tab="recap" class="tab-btn"><span class="text-xl">📊</span><span>Rekap</span></button>
-        <button data-tab="settings" class="tab-btn"><span class="text-xl">⚙️</span><span>Pengaturan</span></button>
-      </div>
-    </nav>
-  </div>
-
-  <!-- Lembar tambah catatan -->
-  <div id="sheet" class="hidden fixed inset-0 z-40">
-    <div id="sheet-backdrop" class="absolute inset-0 bg-black/40"></div>
-    <form id="tx-form" class="absolute bottom-0 inset-x-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] space-y-4 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-bold">Catatan baru</h2>
-        <button type="button" id="sheet-close" class="text-slate-400 text-2xl leading-none px-2" aria-label="Tutup">×</button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-        <button type="button" data-type="income" class="type-btn">Pemasukan</button>
-        <button type="button" data-type="expense" class="type-btn">Pengeluaran</button>
-      </div>
-
-      <div>
-        <label for="tx-amount" class="block text-sm font-medium mb-1">Jumlah (Rp)</label>
-        <input id="tx-amount" type="text" inputmode="numeric" required class="field text-2xl font-bold" placeholder="0" autocomplete="off" />
-      </div>
-
-      <div>
-        <p class="text-sm font-medium mb-2">Kategori</p>
-        <div id="tx-cats" class="flex flex-wrap gap-2"></div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label for="tx-date" class="block text-sm font-medium mb-1">Tanggal</label>
-          <input id="tx-date" type="date" required class="field" />
-        </div>
-        <div>
-          <label for="tx-note" class="block text-sm font-medium mb-1">Catatan</label>
-          <input id="tx-note" type="text" maxlength="200" class="field" placeholder="Opsional" />
-        </div>
-      </div>
-
-      <p id="tx-msg" class="text-sm text-red-600 min-h-[1.25rem]" role="alert"></p>
-      <button id="tx-submit" type="submit" class="btn-primary w-full">Simpan</button>
-    </form>
-  </div>
-
-  <div id="toast" class="hidden fixed z-50 left-1/2 -translate-x-1/2 bottom-28 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg"></div>
-
-  <script type="module" src="js/app.js"></script>
+    <!-- PANGGIL FILE JS SENTRAL -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
